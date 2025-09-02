@@ -34,6 +34,8 @@ pub async fn main() -> Result<(), JsValue> {
     let right_info_div =
         doc.get_element_by_id("right-info").unwrap().dyn_into::<HtmlDivElement>()?;
     let config = load_config();
+    let start = Instant::now();
+    let timelimit = std::time::Duration::from_secs(20 * 60);
     let (tx, rx) = channel();
     init_menu_callbacks(tx.clone());
     input::init_input_handlers(tx)?;
@@ -89,7 +91,14 @@ pub async fn main() -> Result<(), JsValue> {
                 &sound,
                 eval,
                 &mut new_piece,
-            )
+            );
+
+            // TODO blank the screen or something
+            let now = Instant::now();
+            if now > start + timelimit {
+                timer_div.set_text_content(Some("DONE!!!!! Gaming Time is over. Please Stretch"));
+                break;
+            }
         }
     };
     raf_fut.await;
