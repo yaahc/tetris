@@ -3154,6 +3154,7 @@ dependencies = [
  "image",
  "log",
  "ringbuffer",
+ "serde_json",
  "tetris",
  "tetrizz",
  "ultraviolet",

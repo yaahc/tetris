@@ -219,9 +219,18 @@ pub enum TimerEvent {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum SettingEvent {
+    Das(u16),
+    Arr(u16),
+    Gravity(Option<u16>),
+    SoftDrop(u16),
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Event {
     Timer(TimerEvent),
     Input(InputEvent),
+    Setting(SettingEvent),
 }
 
 impl From<TimerEvent> for Event {

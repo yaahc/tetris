@@ -47,3 +47,4 @@ web-sys = { version = "0.3", features = [
     "AddEventListenerOptions",
     "console",
 ] }
+serde_json.workspace = true

@@ -55,7 +55,7 @@
             <label> undo <button id="undo-key">u</button> </label>
         </details>
         <details>
-            <summary>gameplay</summary>
+            <summary>handling</summary>
             <label
                 >DAS: <input id="das" class="num-select" type="number" value="10"
             /></label>
@@ -240,6 +240,32 @@
                     <option>holds</option>
                 </select>
             </label>
+        </details>
+        <details open>
+            <summary>mode</summary>
+            <label>
+                Mode
+                <select name="mode" id="mode-select">
+                    <option>Sprint</option>
+                    <option>Training Lab</option>
+                </select>
+            </label>
+            <div id="sprint-settings">
+            </div>
+            <div id="training-lab-settings">
+        <label class="switch" id="lookahead">
+          lookahead
+          <input type="checkbox">
+        </label>
+        <label class="switch" id="search">
+          search
+          <input type="checkbox">
+        </label>
+        <label class="switch" id="mino-mode">
+          mino_mode
+          <input type="checkbox">
+        </label>
+        </div>
         </details>
     </div>
     <script type="module">

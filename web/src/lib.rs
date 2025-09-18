@@ -2,14 +2,15 @@ mod fps;
 mod graphics;
 mod input;
 
-use std::sync::mpsc::{Receiver, channel};
-
 use log::info;
+use serde_json::from_str;
+use std::sync::mpsc::{self, channel, Receiver};
+use tetris::game::Lookahead;
 use tetris::sound::{NullSink, Sink, SoundPlayer};
-use tetris::{Config, Event, Game, GameState};
+use tetris::{Config, Event, Game, GameState, SettingEvent};
 use tetrizz::eval::Eval;
 use wasm_bindgen::prelude::*;
-use web_sys::{HtmlCanvasElement, HtmlDivElement};
+use web_sys::{HtmlCanvasElement, HtmlDivElement, HtmlInputElement};
 use web_time::Instant;
 
 use crate::fps::FPSCounter;
@@ -32,27 +33,20 @@ pub async fn main() -> Result<(), JsValue> {
     let spins_div = doc.get_element_by_id("spins").unwrap().dyn_into::<HtmlDivElement>()?;
     let right_info_div =
         doc.get_element_by_id("right-info").unwrap().dyn_into::<HtmlDivElement>()?;
-    let config = Config {
-        das: 6,
-        arr: 0,
-        gravity: Some(60),
-        soft_drop: 1,
-        lock_delay: (60, 300, 1200),
-        ghost: true,
-    };
-
+    let config = load_config();
     let (tx, rx) = channel();
+    init_menu_callbacks(tx.clone());
     input::init_input_handlers(tx)?;
     let (mut raf_loop, _canceler) = wasm_repeated_animation_frame::RafLoop::new();
     let mut fps = fps::FPSCounter::new();
     let mut game = Game::new(config);
-    game.mode = tetris::Mode::Sprint { target_lines: 40 };
-    // game.mode = tetris::Mode::TrainingLab {
-    //     search: false,
-    //     // lookahead: Some(Lookahead::new(3, 30)),
-    //     lookahead: None,
-    //     mino_mode: true,
-    // };
+    // game.mode = tetris::Mode::Sprint { target_lines: 40 };
+    game.mode = tetris::Mode::TrainingLab {
+        search: false,
+        lookahead: Some(Lookahead::new(3, 30)),
+        // lookahead: None,
+        mino_mode: true,
+    };
     info!("starting event loop, why won't you work!?");
     info!("mode: {:?}", game.mode);
     let sound = SoundPlayer::<NullSink>::default();
@@ -100,6 +94,86 @@ pub async fn main() -> Result<(), JsValue> {
     };
     raf_fut.await;
     Ok(())
+}
+
+fn load_config() -> Config {
+    let window = web_sys::window().unwrap();
+    let storage = window.local_storage().unwrap().unwrap();
+
+    let default_config = Config {
+        das: 6,
+        arr: 0,
+        gravity: Some(60),
+        soft_drop: 1,
+        lock_delay: (60, 300, 1200),
+        ghost: true,
+    };
+
+    let das =
+        storage.get("das").unwrap().map(|s| from_str(&s).unwrap()).unwrap_or(default_config.das);
+    let arr =
+        storage.get("arr").unwrap().map(|s| from_str(&s).unwrap()).unwrap_or(default_config.arr);
+    let gravity = storage
+        .get("gravity")
+        .unwrap()
+        .map(|s| from_str(&s).unwrap())
+        .unwrap_or(default_config.gravity);
+    let gravity = match gravity {
+        Some(0) => None,
+        gravity => gravity,
+    };
+    let soft_drop = storage
+        .get("soft-drop")
+        .unwrap()
+        .map(|s| from_str(&s).unwrap())
+        .unwrap_or(default_config.soft_drop);
+    let lock_delay = storage
+        .get("lock-delay")
+        .unwrap()
+        .map(|s| from_str(&s).unwrap())
+        .unwrap_or(default_config.lock_delay);
+    let ghost = storage
+        .get("ghost")
+        .unwrap()
+        .map(|s| from_str(&s).unwrap())
+        .unwrap_or(default_config.ghost);
+
+    Config { das, arr, gravity, soft_drop, lock_delay, ghost }
+}
+
+fn init_menu_callbacks(events: mpsc::Sender<Event>) {
+    let window = web_sys::window().unwrap();
+    let storage = window.local_storage().unwrap().unwrap();
+    let doc = window.document().unwrap();
+    let handler = move |event: web_sys::Event| {
+        let element = event.target().unwrap().value_of().dyn_into::<HtmlInputElement>().unwrap();
+        let value = element.value();
+        let name = element.id();
+        storage.set(&name, &value).unwrap();
+        let event = match name.as_str() {
+            "das" => Event::Setting(SettingEvent::Das(value.parse().unwrap())),
+            "arr" => Event::Setting(SettingEvent::Arr(value.parse().unwrap())),
+            "gravity" => {
+                let value: u16 = value.parse().unwrap();
+                let value = if value == 0 { None } else { Some(value) };
+                Event::Setting(SettingEvent::Gravity(value))
+            }
+            "soft-drop" => Event::Setting(SettingEvent::SoftDrop(value.parse().unwrap())),
+            _ => todo!(),
+        };
+        events.send(event).unwrap();
+    };
+    let closure = Closure::wrap(Box::new(handler) as Box<dyn FnMut(_)>);
+    let das = doc.get_element_by_id("das").unwrap().dyn_into::<HtmlInputElement>().unwrap();
+    das.set_onchange(Some(closure.as_ref().unchecked_ref()));
+    let arr = doc.get_element_by_id("arr").unwrap().dyn_into::<HtmlInputElement>().unwrap();
+    arr.set_onchange(Some(closure.as_ref().unchecked_ref()));
+    let gravity = doc.get_element_by_id("gravity").unwrap().dyn_into::<HtmlInputElement>().unwrap();
+    gravity.set_onchange(Some(closure.as_ref().unchecked_ref()));
+    let soft_drop =
+        doc.get_element_by_id("soft-drop").unwrap().dyn_into::<HtmlInputElement>().unwrap();
+    soft_drop.set_onchange(Some(closure.as_ref().unchecked_ref()));
+    std::mem::forget(closure);
 }
 
 #[allow(clippy::too_many_arguments)]

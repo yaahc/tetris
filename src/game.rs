@@ -486,6 +486,18 @@ impl Game {
                     lookahead.next_piece_goal = self.pieces + lookahead.min_placements;
                 }
             }
+            Setting(SettingEvent::Das(das)) => {
+                self.config.das = das;
+            }
+            Setting(SettingEvent::Arr(arr)) => {
+                self.config.arr = arr;
+            }
+            Setting(SettingEvent::Gravity(gravity)) => {
+                self.config.gravity = gravity;
+            }
+            Setting(SettingEvent::SoftDrop(soft_drop)) => {
+                self.config.soft_drop = soft_drop;
+            }
         };
         // TODO: set lock timers if on the ground and they arent already set
         false

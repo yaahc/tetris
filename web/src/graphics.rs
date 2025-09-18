@@ -1,13 +1,12 @@
-use image::{ImageFormat, imageops::FilterType};
+use image::{imageops::FilterType, ImageFormat};
 use ringbuffer::RingBuffer;
 use tetris::{Cell, Game, GameState, Piece, PieceLocation, Rotation};
 use ultraviolet::DVec3;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
-    Blob, CanvasRenderingContext2d, HtmlCanvasElement, ImageBitmap, ImageData,
-    Response,
     js_sys::{Uint8Array, Uint8ClampedArray},
+    Blob, CanvasRenderingContext2d, HtmlCanvasElement, ImageBitmap, ImageData, Response,
 };
 
 const SIZE: usize = 24;
@@ -64,7 +63,7 @@ pub fn draw_board(
     }
 
     let PieceLocation { piece, pos: (x, y), rot } = game.current;
-    cx.set_global_alpha(0.25); // TODO: slider
+    cx.set_global_alpha(0.50); // TODO: slider
     let ghost = game.ghost_pos();
     let origin = (
         (ghost.pos.0 as f64 * SIZE as f64 + border_width),
